@@ -80,7 +80,7 @@ AVAILABLE_MODELS = [
     "gemini-1.5-flash-8b",
 ]
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-1.5-flash"
 
 
 def analyze_symptoms(
