@@ -1,11 +1,12 @@
 """
 symptom_analyzer.py
-Core AI engine — calls Gemini 2.5 Flash and returns structured triage results.
+Core AI engine — calls Gemini via the new google-genai SDK.
 """
 import os
 import json
 import re
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -31,15 +32,15 @@ TRIAGE_LEVELS = {
 SYSTEM_PROMPT = """You are MediCheck, an expert AI-powered medical triage assistant.
 Your role is to assess patient-reported symptoms and provide:
 1. A triage recommendation: SELF_CARE, SEE_A_DOCTOR, or EMERGENCY
-2. A list of 3–6 possible related conditions (differential diagnoses)
+2. A list of 3-6 possible related conditions (differential diagnoses)
 3. A clear, empathetic clinical summary explaining the reasoning
 4. Specific home-care tips (if SELF_CARE) or urgency guidance (if SEE_A_DOCTOR / EMERGENCY)
 5. Red-flag warning signs the user should watch for
 
 IMPORTANT RULES:
-- Always respond with valid JSON only — no markdown fences, no extra text.
+- Always respond with valid JSON only - no markdown fences, no extra text.
 - Be conservative: when in doubt, escalate the triage level.
-- Never diagnose definitively — use "possible", "may indicate", "consistent with".
+- Never diagnose definitively - use "possible", "may indicate", "consistent with".
 - Always include a medical disclaimer.
 
 JSON schema you MUST follow exactly:
@@ -56,6 +57,16 @@ JSON schema you MUST follow exactly:
 }
 """
 
+# Only models confirmed working for new free-tier API keys
+AVAILABLE_MODELS = [
+    "gemini-2.0-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+]
+
+DEFAULT_MODEL = "gemini-2.0-flash-lite"
+
 
 def _build_user_prompt(symptoms: str, age: str, sex: str, duration: str, extra: str) -> str:
     parts = [f"Symptoms: {symptoms}"]
@@ -70,16 +81,6 @@ def _build_user_prompt(symptoms: str, age: str, sex: str, duration: str, extra: 
     return "\n".join(parts)
 
 
-# Only models confirmed working for new free-tier API keys
-AVAILABLE_MODELS = [
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
-    "gemini-1.5-pro",
-]
-
-DEFAULT_MODEL = "gemini-1.5-flash"
-
-
 def analyze_symptoms(
     symptoms: str,
     age: str = "",
@@ -90,24 +91,22 @@ def analyze_symptoms(
     model_name: str = DEFAULT_MODEL,
 ) -> dict:
     """
-    Send symptoms to Gemini and return a parsed triage dict.
+    Send symptoms to Gemini via google-genai SDK and return a parsed triage dict.
     Raises ValueError if the API key is missing or the response cannot be parsed.
     """
     key = api_key or os.getenv("GEMINI_API_KEY", "")
     if not key:
         raise ValueError("Gemini API key is not set. Please enter it in the sidebar.")
 
-    genai.configure(api_key=key)
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=SYSTEM_PROMPT,
-    )
+    client = genai.Client(api_key=key)
 
     user_prompt = _build_user_prompt(symptoms, age, sex, duration, extra)
 
-    response = model.generate_content(
-        user_prompt,
-        generation_config=genai.types.GenerationConfig(
+    response = client.models.generate_content(
+        model=model_name,
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
             temperature=0.2,
             top_p=0.95,
             max_output_tokens=2048,
@@ -123,7 +122,9 @@ def analyze_symptoms(
     try:
         result = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Could not parse Gemini response as JSON.\n\nRaw response:\n{raw}") from exc
+        raise ValueError(
+            f"Could not parse Gemini response as JSON.\n\nRaw response:\n{raw}"
+        ) from exc
 
     # Validate triage level
     if result.get("triage_level") not in TRIAGE_LEVELS:
