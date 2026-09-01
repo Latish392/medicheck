@@ -57,12 +57,10 @@ JSON schema you MUST follow exactly:
 }
 """
 
-# Only models confirmed working for new free-tier API keys
+# Models confirmed working for new free-tier API keys
 AVAILABLE_MODELS = [
     "gemini-2.0-flash-lite",
     "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
 ]
 
 DEFAULT_MODEL = "gemini-2.0-flash-lite"
