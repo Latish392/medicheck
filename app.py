@@ -59,7 +59,7 @@ with st.sidebar:
         "Gemini model",
         options=AVAILABLE_MODELS,
         index=AVAILABLE_MODELS.index(DEFAULT_MODEL),
-        help="If you get a 404 error, switch to a different model.",
+        help="Use gemini-1.5-flash — works on all free API keys.",
         key="selected_model",
     )
 
