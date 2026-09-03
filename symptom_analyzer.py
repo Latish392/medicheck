@@ -57,13 +57,15 @@ JSON schema you MUST follow exactly:
 }
 """
 
-# Models confirmed working for new free-tier API keys
+# Models confirmed working — verified from API
 AVAILABLE_MODELS = [
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
 ]
 
-DEFAULT_MODEL = "gemini-2.0-flash-lite"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 def _build_user_prompt(symptoms: str, age: str, sex: str, duration: str, extra: str) -> str:
