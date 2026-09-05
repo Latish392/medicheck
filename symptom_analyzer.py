@@ -59,13 +59,12 @@ JSON schema you MUST follow exactly:
 
 # Models confirmed working — verified from API
 AVAILABLE_MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-3.5-flash",
     "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-2.5-flash-lite",
 ]
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.6-flash"
 
 
 def _build_user_prompt(symptoms: str, age: str, sex: str, duration: str, extra: str) -> str:
@@ -97,6 +96,13 @@ def analyze_symptoms(
     key = api_key or os.getenv("GEMINI_API_KEY", "")
     if not key:
         raise ValueError("Gemini API key is not set. Please enter it in the sidebar.")
+    if not key.startswith("AIza"):
+        raise ValueError(
+            "Invalid API key. Your key must start with 'AIza'.\n\n"
+            "The 'AQ...' token you entered is a Google OAuth token — not a Gemini API key.\n\n"
+            "Get the correct key at: https://aistudio.google.com/apikey\n"
+            "Click 'Create API key' → copy the key starting with 'AIzaSy...'"
+        )
 
     client = genai.Client(api_key=key)
 
